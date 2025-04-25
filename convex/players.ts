@@ -38,7 +38,14 @@ export const movePlayer = mutation({
     y: v.number(),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.playerId, { x: args.x, y: args.y });
+    // Check if the player document still exists before patching
+    const player = await ctx.db.get(args.playerId);
+    if (player) {
+      await ctx.db.patch(args.playerId, { x: args.x, y: args.y });
+    } else {
+      // Optionally log that the player was already deleted
+      console.warn(`Attempted to move non-existent player: ${args.playerId}`);
+    }
   },
 });
 

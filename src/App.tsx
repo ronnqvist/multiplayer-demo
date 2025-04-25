@@ -26,15 +26,34 @@ function App() {
   const animationFrameId = useRef<number | null>(null);
   const intervalId = useRef<number | null>(null); // Use 'number' for browser interval ID
 
-  // Join game on mount
+  // Join game on mount or load existing ID
   useEffect(() => {
-    const join = async () => {
-      const newPlayerId = await joinGame({});
-      setCurrentPlayerId(newPlayerId);
-      // Initialize local position when player data becomes available
+    const playerIdKey = 'multiplayerDemoPlayerId';
+    const existingPlayerId = localStorage.getItem(playerIdKey);
+
+    const initializePlayer = async () => {
+      if (existingPlayerId) {
+        // TODO: Validate if this player ID still exists in the DB?
+        // For this demo, we assume it does if it's in localStorage.
+        setCurrentPlayerId(existingPlayerId as Id<"players">);
+        console.log("Existing player joined:", existingPlayerId);
+      } else {
+        console.log("No existing player found, creating new one...");
+        const newPlayerId = await joinGame({});
+        if (newPlayerId) {
+          localStorage.setItem(playerIdKey, newPlayerId);
+          setCurrentPlayerId(newPlayerId);
+          console.log("New player created:", newPlayerId);
+        } else {
+          console.error("Failed to create player.");
+        }
+      }
     };
-    join();
-  }, [joinGame]);
+
+    initializePlayer();
+    // Intentionally run only once on mount, dependencies are stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on initial mount
 
   // Initialize local position once player data is available
   useEffect(() => {
@@ -170,7 +189,18 @@ function App() {
       )}
       {/* Add the New Game button */}
       <button
-        onClick={() => deleteAllPlayers({})} // Call the mutation on click
+        onClick={async () => {
+          await deleteAllPlayers({}); // Call the mutation
+          // Clear local state and storage
+          const playerIdKey = 'multiplayerDemoPlayerId';
+          localStorage.removeItem(playerIdKey);
+          setCurrentPlayerId(null);
+          localPosition.current = null; // Reset local position ref
+          lastSentPosition.current = null; // Reset last sent position ref
+          console.log("Game reset. Player ID cleared.");
+          // Optionally force a re-join immediately after clearing?
+          // Or let the user refresh to get a new ID via the useEffect above.
+        }}
         style={{ position: 'absolute', bottom: '10px', left: '10px' }}
       >
         New Game (Delete All)
