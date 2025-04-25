@@ -7,5 +7,6 @@ export default defineSchema({
     x: v.number(),
     y: v.number(),
     color: v.string(), // e.g., "#FF0000"
+    lastSeen: v.optional(v.number()), // Timestamp of the last update - optional for backward compatibility
   }),
 });

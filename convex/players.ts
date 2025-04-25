@@ -25,6 +25,7 @@ export const joinGame = mutation({
       x: startX,
       y: startY,
       color: playerColor,
+      lastSeen: Date.now(), // Set initial timestamp
     });
     return playerId; // Return the ID of the newly created player
   },
@@ -41,7 +42,12 @@ export const movePlayer = mutation({
     // Check if the player document still exists before patching
     const player = await ctx.db.get(args.playerId);
     if (player) {
-      await ctx.db.patch(args.playerId, { x: args.x, y: args.y });
+      // Update position and lastSeen timestamp
+      await ctx.db.patch(args.playerId, {
+        x: args.x,
+        y: args.y,
+        lastSeen: Date.now(),
+      });
     } else {
       // Optionally log that the player was already deleted
       console.warn(`Attempted to move non-existent player: ${args.playerId}`);
@@ -58,20 +64,4 @@ export const listPlayers = query({
   },
 });
 
-// Mutation to delete all players (for resetting the game)
-// WARNING: In a real app, this should be heavily restricted/authorized.
-export const deleteAllPlayers = mutation({
-  args: {}, // No arguments needed
-  handler: async (ctx) => {
-    // Get all player documents
-    const allPlayers = await ctx.db.query("players").collect();
-
-    // Delete each player
-    // Consider potential performance implications for very large numbers of players.
-    // For huge scale, a different approach might be needed.
-    for (const player of allPlayers) {
-      await ctx.db.delete(player._id);
-    }
-    console.log(`Deleted ${allPlayers.length} players.`);
-  },
-});
+// Removed deleteAllPlayers mutation

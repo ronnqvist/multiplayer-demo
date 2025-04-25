@@ -14,8 +14,8 @@ function App() {
   const players = useQuery(api.players.listPlayers);
   const joinGame = useMutation(api.players.joinGame);
   const movePlayer = useMutation(api.players.movePlayer);
-  // Add the new mutation hook
-  const deleteAllPlayers = useMutation(api.players.deleteAllPlayers);
+  // Remove the deleteAllPlayers mutation hook
+  // const deleteAllPlayers = useMutation(api.players.deleteAllPlayers);
 
   const [currentPlayerId, setCurrentPlayerId] = useState<Id<"players"> | null>(null);
 
@@ -199,24 +199,7 @@ function App() {
       ) : (
         <p>Loading players...</p>
       )}
-      {/* Add the New Game button */}
-      <button
-        onClick={async () => {
-          await deleteAllPlayers({}); // Call the mutation
-          // Clear local state and storage
-          const playerIdKey = 'multiplayerDemoPlayerId';
-          localStorage.removeItem(playerIdKey);
-          setCurrentPlayerId(null);
-          localPosition.current = null; // Reset local position ref
-          lastSentPosition.current = null; // Reset last sent position ref
-          console.log("Game reset. Player ID cleared.");
-          // Optionally force a re-join immediately after clearing?
-          // Or let the user refresh to get a new ID via the useEffect above.
-        }}
-        style={{ position: 'absolute', bottom: '10px', left: '10px' }}
-      >
-        New Game (Delete All)
-      </button>
+      {/* Removed the New Game button */}
     </div>
   );
 }
