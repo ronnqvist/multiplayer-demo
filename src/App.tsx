@@ -13,11 +13,10 @@ function App() {
   const movePlayer = useMutation(api.players.movePlayer);
 
   const [currentPlayerId, setCurrentPlayerId] = useState<Id<"players"> | null>(null);
-  // State for local position to trigger re-renders
-  const [localPosition, setLocalPosition] = useState<{ x: number; y: number } | null>(null);
 
-  // Refs for non-rendering state
+  // Refs for smooth movement
   const pressedKeys = useRef<Record<string, boolean>>({});
+  const localPosition = useRef<{ x: number; y: number } | null>(null);
   const lastSentPosition = useRef<{ x: number; y: number } | null>(null);
   const animationFrameId = useRef<number | null>(null);
   const intervalId = useRef<number | null>(null); // Use 'number' for browser interval ID
@@ -32,17 +31,17 @@ function App() {
     join();
   }, [joinGame]);
 
-  // Initialize local position state once player data is available
+  // Initialize local position once player data is available
   useEffect(() => {
-    if (!localPosition && currentPlayerId && players) { // Check state, not ref
+    if (!localPosition.current && currentPlayerId && players) {
+      // Explicitly type 'p' based on the inferred type of 'players' elements
       const me = players.find((p: typeof players[number]) => p._id === currentPlayerId);
       if (me) {
-        setLocalPosition({ x: me.x, y: me.y }); // Set state
-        lastSentPosition.current = { x: me.x, y: me.y }; // Initialize ref
+        localPosition.current = { x: me.x, y: me.y };
+        lastSentPosition.current = { x: me.x, y: me.y }; // Initialize last sent position
       }
     }
-    // Only re-initialize if localPosition is null (e.g., on first load)
-  }, [players, currentPlayerId, localPosition]);
+  }, [players, currentPlayerId]);
 
 
   // Handle Key Down/Up
@@ -69,35 +68,25 @@ function App() {
   // Game Loop using requestAnimationFrame
   useEffect(() => {
     const gameLoop = () => {
-      // Use state for current position
-      setLocalPosition(currentLocalPos => {
-        if (!currentLocalPos || !currentPlayerId) {
-          // If position is not set yet, don't update, just request next frame
-          animationFrameId.current = requestAnimationFrame(gameLoop);
-          return currentLocalPos;
-        }
+      if (!localPosition.current || !currentPlayerId) {
+        animationFrameId.current = requestAnimationFrame(gameLoop);
+        return; // Wait until position is initialized
+      }
 
-        let dx = 0;
-        let dy = 0;
+      let dx = 0;
+      let dy = 0;
 
       if (pressedKeys.current['ArrowUp']) dy -= MOVE_SPEED;
       if (pressedKeys.current['ArrowDown']) dy += MOVE_SPEED;
       if (pressedKeys.current['ArrowLeft']) dx -= MOVE_SPEED;
-        if (pressedKeys.current['ArrowRight']) dx += MOVE_SPEED;
+      if (pressedKeys.current['ArrowRight']) dx += MOVE_SPEED;
 
-        if (dx !== 0 || dy !== 0) {
-          // Return the new position state
-          return {
-            x: currentLocalPos.x + dx,
-            y: currentLocalPos.y + dy,
-            // Optional: Add boundary checks here if needed
-          };
-        }
-        // If no keys pressed, return the current position unchanged
-        return currentLocalPos;
-      });
+      if (dx !== 0 || dy !== 0) {
+        localPosition.current.x += dx;
+        localPosition.current.y += dy;
+        // Optional: Add boundary checks here if needed
+      }
 
-      // Always request the next frame
       animationFrameId.current = requestAnimationFrame(gameLoop);
     };
 
@@ -108,28 +97,28 @@ function App() {
         cancelAnimationFrame(animationFrameId.current);
       }
     };
-  // No dependency on localPosition state here, loop runs independently
-  }, [currentPlayerId]);
+  }, [currentPlayerId]); // Re-run if currentPlayerId changes (though unlikely)
 
 
   // Periodic Server Update
   useEffect(() => {
     intervalId.current = setInterval(() => {
-      // Read from localPosition state
-      if (currentPlayerId && localPosition && lastSentPosition.current) {
-        const dx = localPosition.x - lastSentPosition.current.x;
-        const dy = localPosition.y - lastSentPosition.current.y;
+      if (currentPlayerId && localPosition.current && lastSentPosition.current) {
+        // Only send update if position has changed significantly
+        const dx = localPosition.current.x - lastSentPosition.current.x;
+        const dy = localPosition.current.y - lastSentPosition.current.y;
 
+        // Send update if moved at least 1 pixel in either direction
         if (Math.abs(dx) >= 1 || Math.abs(dy) >= 1) {
           movePlayer({
             playerId: currentPlayerId,
-            x: Math.round(localPosition.x), // Send rounded state position
-            y: Math.round(localPosition.y),
+            x: Math.round(localPosition.current.x), // Send rounded position
+            y: Math.round(localPosition.current.y),
           });
-          // Update last sent position ref
+          // Update last sent position immediately after sending
           lastSentPosition.current = {
-             x: localPosition.x,
-             y: localPosition.y
+             x: localPosition.current.x,
+             y: localPosition.current.y
           };
         }
       }
@@ -140,35 +129,29 @@ function App() {
         clearInterval(intervalId.current);
       }
     };
-  // Dependency includes localPosition state now
-  }, [currentPlayerId, movePlayer, localPosition]);
+  }, [currentPlayerId, movePlayer]); // Dependencies for the interval effect
 
 
-  // Render players
+  // Render players based on Convex data
   return (
     <div className="game-area">
       <h1>Multiplayer Demo</h1>
       {players ? (
-        players.map((player: typeof players[number]) => {
-          // Determine position: use local state for current player, server state for others
-          const isCurrentPlayer = player._id === currentPlayerId;
-          const position = isCurrentPlayer && localPosition ? localPosition : { x: player.x, y: player.y };
-
-          return (
-            <div
-              key={player._id}
-              className="player"
-              style={{
-                left: `${position.x}px`,
-                top: `${position.y}px`,
-                backgroundColor: player.color,
-                border: isCurrentPlayer ? '2px solid black' : 'none',
-                // Remove transition for current player if it exists in CSS,
-                // or add specific style here: transition: isCurrentPlayer ? 'none' : 'left 0.1s linear, top 0.1s linear',
-              }}
-            />
-          );
-        })
+        // Explicitly type 'player' based on the inferred type of 'players' elements
+        players.map((player: typeof players[number]) => (
+          <div
+            key={player._id}
+            className="player"
+            style={{
+              // Render using server position for consistency across clients
+              left: `${player.x}px`,
+              top: `${player.y}px`,
+              backgroundColor: player.color,
+              border: player._id === currentPlayerId ? '2px solid black' : 'none',
+              // Smooth transition applied via CSS
+            }}
+          />
+        ))
       ) : (
         <p>Loading players...</p>
       )}
