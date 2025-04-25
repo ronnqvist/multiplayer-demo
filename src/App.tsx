@@ -50,22 +50,34 @@ function App() {
       }
     };
 
-    initializePlayer();
-    // Intentionally run only once on mount, dependencies are stable
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on initial mount
+    // Only run initialization if we don't currently have an ID
+    if (!currentPlayerId) {
+      initializePlayer();
+    }
+    // Now depends on currentPlayerId to re-run if it becomes null
+  }, [currentPlayerId, joinGame]);
 
-  // Initialize local position once player data is available
+  // Initialize local position OR detect if current player was deleted
   useEffect(() => {
-    if (!localPosition.current && currentPlayerId && players) {
-      // Explicitly type 'p' based on the inferred type of 'players' elements
+    const playerIdKey = 'multiplayerDemoPlayerId';
+    if (currentPlayerId && players) {
       const me = players.find((p: typeof players[number]) => p._id === currentPlayerId);
       if (me) {
-        localPosition.current = { x: me.x, y: me.y };
-        lastSentPosition.current = { x: me.x, y: me.y }; // Initialize last sent position
+        // Player exists, initialize local position if needed
+        if (!localPosition.current) {
+          localPosition.current = { x: me.x, y: me.y };
+          lastSentPosition.current = { x: me.x, y: me.y };
+        }
+      } else {
+        // Player ID exists locally but not in DB (likely deleted by reset)
+        console.log(`Player ${currentPlayerId} not found in DB, clearing local state.`);
+        localStorage.removeItem(playerIdKey);
+        setCurrentPlayerId(null);
+        localPosition.current = null;
+        lastSentPosition.current = null;
       }
     }
-  }, [players, currentPlayerId]);
+  }, [players, currentPlayerId]); // Re-run when players list or current ID changes
 
 
   // Handle Key Down/Up
