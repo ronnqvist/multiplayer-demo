@@ -14,6 +14,8 @@ function App() {
   const players = useQuery(api.players.listPlayers);
   const joinGame = useMutation(api.players.joinGame);
   const movePlayer = useMutation(api.players.movePlayer);
+  // Add the new mutation hook
+  const deleteAllPlayers = useMutation(api.players.deleteAllPlayers);
 
   const [currentPlayerId, setCurrentPlayerId] = useState<Id<"players"> | null>(null);
 
@@ -166,6 +168,13 @@ function App() {
       ) : (
         <p>Loading players...</p>
       )}
+      {/* Add the New Game button */}
+      <button
+        onClick={() => deleteAllPlayers({})} // Call the mutation on click
+        style={{ position: 'absolute', bottom: '10px', left: '10px' }}
+      >
+        New Game (Delete All)
+      </button>
     </div>
   );
 }
