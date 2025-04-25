@@ -6,6 +6,9 @@ import './App.css';
 
 const MOVE_SPEED = 5; // Pixels per frame (adjust as needed)
 const UPDATE_INTERVAL_MS = 50; // Send updates to server more frequently
+const GAME_AREA_WIDTH = 600;
+const GAME_AREA_HEIGHT = 600;
+const PLAYER_SIZE = 20;
 
 function App() {
   const players = useQuery(api.players.listPlayers);
@@ -82,9 +85,17 @@ function App() {
       if (pressedKeys.current['ArrowRight']) dx += MOVE_SPEED;
 
       if (dx !== 0 || dy !== 0) {
-        localPosition.current.x += dx;
-        localPosition.current.y += dy;
-        // Optional: Add boundary checks here if needed
+        // Calculate potential new position
+        let newX = localPosition.current.x + dx;
+        let newY = localPosition.current.y + dy;
+
+        // Clamp position within boundaries
+        newX = Math.max(0, Math.min(newX, GAME_AREA_WIDTH - PLAYER_SIZE));
+        newY = Math.max(0, Math.min(newY, GAME_AREA_HEIGHT - PLAYER_SIZE));
+
+        // Update local position
+        localPosition.current.x = newX;
+        localPosition.current.y = newY;
       }
 
       animationFrameId.current = requestAnimationFrame(gameLoop);
