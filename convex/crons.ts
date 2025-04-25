@@ -3,10 +3,10 @@ import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
-// Schedule cleanup to run every minute
+// Schedule cleanup to run every 15 seconds
 crons.interval(
   "cleanup inactive players",
-  { minutes: 1 }, // Run every 1 minute
+  { seconds: 15 }, // Run every 15 seconds
   internal.cleanup.cleanupInactivePlayers, // Function to run
   {} // Arguments (none needed for this function)
 );

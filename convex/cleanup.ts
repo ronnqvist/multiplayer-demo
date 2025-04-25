@@ -1,6 +1,6 @@
 import { internalMutation } from "./_generated/server";
 
-const INACTIVITY_THRESHOLD_MS = 60 * 1000; // 1 minute
+const INACTIVITY_THRESHOLD_MS = 15 * 1000; // 15 seconds
 
 export const cleanupInactivePlayers = internalMutation({
   args: {},
