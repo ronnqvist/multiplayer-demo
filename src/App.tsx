@@ -46,23 +46,16 @@ function App() {
   }, [currentPlayerId]);
 
   useEffect(() => {
-    const playerIdKey = 'multiplayerDemoPlayerId';
-    if (currentPlayerId && players) {
+    if (currentPlayerId && players && !isLoading) {
       const me = players.find((p) => p.id === currentPlayerId);
       if (me) {
         if (!localPosition.current) {
-          localPosition.current = { x: me.x, y: me.y };
-          lastSentPosition.current = { x: me.x, y: me.y };
+          localPosition.current = { x: Number(me.x), y: Number(me.y) };
+          lastSentPosition.current = { x: Number(me.x), y: Number(me.y) };
         }
-      } else {
-        console.log(`Player ${currentPlayerId} not found in DB, clearing local state.`);
-        localStorage.removeItem(playerIdKey);
-        setCurrentPlayerId(null);
-        localPosition.current = null;
-        lastSentPosition.current = null;
       }
     }
-  }, [players, currentPlayerId]);
+  }, [players, currentPlayerId, isLoading]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -157,8 +150,8 @@ function App() {
             key={player.id}
             className="player"
             style={{
-              left: `${player.x}px`,
-              top: `${player.y}px`,
+              left: `${Number(player.x)}px`,
+              top: `${Number(player.y)}px`,
               backgroundColor: player.color,
               border: player.id === currentPlayerId ? '2px solid black' : 'none',
             }}
