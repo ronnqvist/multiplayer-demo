@@ -4,8 +4,8 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/',
+  base: '/multiplayer-demo/', // Set the base path for GitHub Pages deployment
   build: {
-    outDir: 'docs',
+    outDir: 'docs', // Set output directory to 'docs' for GitHub Pages
   },
 })
