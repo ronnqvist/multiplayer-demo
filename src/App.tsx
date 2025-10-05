@@ -24,10 +24,24 @@ function App() {
     const existingPlayerId = localStorage.getItem(playerIdKey);
 
     const initializePlayer = async () => {
-      if (existingPlayerId) {
-        setCurrentPlayerId(existingPlayerId);
-        console.log("Existing player joined:", existingPlayerId);
-      } else {
+      if (existingPlayerId && !isLoading && players) {
+        const playerExists = players.find(p => p.id === existingPlayerId);
+        if (playerExists) {
+          setCurrentPlayerId(existingPlayerId);
+          console.log("Existing player joined:", existingPlayerId);
+        } else {
+          console.log("Existing player ID not found in DB, creating new one...");
+          localStorage.removeItem(playerIdKey);
+          const newPlayer = await joinPlayer();
+          if (newPlayer) {
+            localStorage.setItem(playerIdKey, newPlayer.id);
+            setCurrentPlayerId(newPlayer.id);
+            console.log("New player created:", newPlayer.id);
+          } else {
+            console.error("Failed to create player.");
+          }
+        }
+      } else if (!existingPlayerId) {
         console.log("No existing player found, creating new one...");
         const newPlayer = await joinPlayer();
         if (newPlayer) {
@@ -43,7 +57,7 @@ function App() {
     if (!currentPlayerId) {
       initializePlayer();
     }
-  }, [currentPlayerId]);
+  }, [currentPlayerId, players, isLoading]);
 
   useEffect(() => {
     if (currentPlayerId && players && !isLoading) {
